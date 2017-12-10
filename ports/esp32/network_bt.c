@@ -47,6 +47,9 @@
 
 extern bool bluetooth_enabled;
 
+#define MSEC_0_625_TO_UNIT(time) ((time) * 1000 / (625))
+
+
 #define CALLBACK_QUEUE_SIZE 10
 
 typedef enum {
@@ -491,12 +494,33 @@ STATIC mp_obj_t network_bt_make_new(const mp_obj_type_t *type_in, size_t n_args,
     return MP_OBJ_FROM_PTR(self);
 }
 
+STATIC mp_obj_t network_bt_ble_adv_enable(mp_obj_t self_in, mp_obj_t enable_in) {
+    network_bt_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    bool enable = mp_obj_is_true(enable_in);
+    if (enable) {
+        esp_ble_adv_params_t params = {
+            .adv_int_min       = MSEC_0_625_TO_UNIT(100), // 100ms
+            .adv_int_max       = MSEC_0_625_TO_UNIT(100), // 100ms
+            .adv_type          = ADV_TYPE_IND,
+            .own_addr_type     = BLE_ADDR_TYPE_PUBLIC,
+            .channel_map       = ADV_CHNL_ALL,
+            .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+        };
+        esp_ble_gap_start_advertising(&params);
+    } else {
+        esp_ble_gap_stop_advertising();
+    }
+    self->advertising = enable;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(network_bt_ble_adv_enable_obj, network_bt_ble_adv_enable);
 
 
 STATIC const mp_rom_map_elem_t network_bt_locals_dict_table[] = {
     // instance methods
 
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&network_bt_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ble_adv_enable), MP_ROM_PTR(&network_bt_ble_adv_enable_obj) },
     /*
        { MP_ROM_QSTR(MP_QSTR_ble_settings), MP_ROM_PTR(&network_bt_ble_settings_obj) },
        { MP_ROM_QSTR(MP_QSTR_ble_adv_enable), MP_ROM_PTR(&network_bt_ble_adv_enable_obj) },
