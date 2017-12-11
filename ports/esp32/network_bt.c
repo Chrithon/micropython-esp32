@@ -45,6 +45,7 @@
 #include "esp_gatts_api.h"
 #include "esp_gattc_api.h"
 
+extern bool bluetooth_enabled;
 
 #define CALLBACK_QUEUE_SIZE 10
 
@@ -378,6 +379,10 @@ STATIC void network_bt_print(const mp_print_t *print, mp_obj_t self_in, mp_print
 
 STATIC mp_obj_t network_bt_init(mp_obj_t self_in) {
     network_bt_obj_t * self = (network_bt_obj_t*)self_in;
+
+    if (!bluetooth_enabled) {
+        mp_raise_msg(&mp_type_MemoryError, "Bluetooth memory not allocated");
+    }
 
     if (item_mut == NULL) {
         item_mut = xSemaphoreCreateMutex();
